@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LogiOpt — Logistics Network Optimization</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #080c10;
+    --surface: #0d1420;
+    --border: #1a2535;
+    --accent: #00e5a0;
+    --accent2: #ff6b35;
+    --accent3: #4da6ff;
+    --text: #c8d8e8;
+    --muted: #4a6075;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  html, body { height: 100%; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.2rem 3rem;
+    background: rgba(8,12,16,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: var(--mono);
+    font-size: 1.1rem;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-decoration: none;
+  }
+  .logo span { color: var(--text); }
+
+  nav a {
+    color: var(--muted);
+    text-decoration: none;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    transition: color 0.2s;
+  }
+  nav a:hover { color: var(--accent); }
+
+  .nav-links { display: flex; gap: 2rem; align-items: center; }
+
+  .btn-nav {
+    background: var(--accent);
+    color: #000 !important;
+    padding: 0.5rem 1.2rem;
+    font-weight: 700;
+  }
+
+  /* Hero */
+  .hero {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 8rem 3rem 4rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 0.3rem 0.8rem;
+    margin-bottom: 2rem;
+    animation: fadeIn 0.6s ease both;
+  }
+
+  h1 {
+    font-size: clamp(3rem, 7vw, 6.5rem);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    animation: slideUp 0.7s ease both 0.1s;
+  }
+  h1 .hi { color: var(--accent); }
+  h1 .h2c { color: var(--accent2); }
+
+  .subtitle {
+    max-width: 600px;
+    margin-top: 1.5rem;
+    font-family: var(--mono);
+    font-size: 0.95rem;
+    color: var(--muted);
+    line-height: 1.8;
+    animation: fadeIn 0.8s ease both 0.3s;
+  }
+
+  .cta-row {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2.5rem;
+    animation: fadeIn 0.8s ease both 0.5s;
+  }
+
+  .btn {
+    display: inline-block;
+    text-decoration: none;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 0.9rem 2rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+  }
+  .btn-primary:hover { background: #00ffb3; transform: translateY(-2px); }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Stats strip */
+  .stats {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .stat {
+    background: var(--bg);
+    padding: 2rem;
+    animation: fadeIn 0.8s ease both;
+  }
+
+  .stat-val {
+    font-family: var(--mono);
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .stat-val.orange { color: var(--accent2); }
+  .stat-val.blue { color: var(--accent3); }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    margin-top: 0.3rem;
+    text-transform: uppercase;
+  }
+
+  /* Modules section */
+  .modules {
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 6rem auto;
+    padding: 0 3rem;
+  }
+
+  .section-title {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 3rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .module-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+  }
+
+  .module-card {
+    background: var(--surface);
+    padding: 2rem;
+    border: 1px solid transparent;
+    transition: border-color 0.2s, transform 0.2s;
+    cursor: default;
+  }
+  .module-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-3px);
+  }
+
+  .module-num {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    margin-bottom: 1rem;
+  }
+
+  .module-name {
+    font-size: 1.3rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+  }
+  .module-name .accent { color: var(--accent); }
+  .module-name .orange { color: var(--accent2); }
+  .module-name .blue { color: var(--accent3); }
+
+  .module-desc {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .module-algos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 1.2rem;
+  }
+
+  .algo-tag {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
+    padding: 0.2rem 0.6rem;
+    background: rgba(0,229,160,0.08);
+    color: var(--accent);
+    border: 1px solid rgba(0,229,160,0.2);
+  }
+  .algo-tag.orange {
+    background: rgba(255,107,53,0.08);
+    color: var(--accent2);
+    border-color: rgba(255,107,53,0.2);
+  }
+  .algo-tag.blue {
+    background: rgba(77,166,255,0.08);
+    color: var(--accent3);
+    border-color: rgba(77,166,255,0.2);
+  }
+
+  footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 2rem 3rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="logo">LOGI<span>OPT</span></a>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/dashboard" class="btn-nav btn">LAUNCH APP →</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <span class="tag">// LOGISTICS NETWORK OPTIMIZATION SYSTEM v1.0</span>
+  <h1>
+    Route.<br>
+    <span class="hi">Sort.</span><br>
+    <span class="h2c">Optimize.</span>
+  </h1>
+  <p class="subtitle">
+    A full-stack academic system combining Sorting Algorithms, Graph Routing,
+    Greedy Methods, and Dynamic Programming to minimize delivery cost and time.
+  </p>
+  <div class="cta-row">
+    <a href="/dashboard" class="btn btn-primary">Open Dashboard →</a>
+    <a href="#modules" class="btn btn-outline">View Modules</a>
+  </div>
+</section>
+
+<div class="stats">
+  <div class="stat">
+    <div class="stat-val">5</div>
+    <div class="stat-label">Algorithm Modules</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val orange">12+</div>
+    <div class="stat-label">Algorithms Implemented</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val blue">REST</div>
+    <div class="stat-label">JSON API Backend</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val">O(n²)</div>
+    <div class="stat-label">Worst-case Benchmarked</div>
+  </div>
+</div>
+
+<section class="modules" id="modules">
+  <div class="section-title">System Modules</div>
+  <div class="module-grid">
+
+    <div class="module-card">
+      <div class="module-num">MODULE 01 // POST /sorting/prioritize</div>
+      <div class="module-name"><span class="accent">Sorting</span> Engine</div>
+      <div class="module-desc">Prioritizes delivery requests using comparison-based and heap-based sorting.</div>
+      <div class="module-algos">
+        <span class="algo-tag">Merge Sort</span>
+        <span class="algo-tag">Quick Sort</span>
+        <span class="algo-tag">Heap PQ</span>
+      </div>
+    </div>
+
+    <div class="module-card">
+      <div class="module-num">MODULE 02 // POST /graph/route</div>
+      <div class="module-name"><span class="accent">Graph</span> Router</div>
+      <div class="module-desc">Finds optimal delivery routes through weighted delivery networks.</div>
+      <div class="module-algos">
+        <span class="algo-tag">Dijkstra</span>
+        <span class="algo-tag">Bellman-Ford</span>
+        <span class="algo-tag">BFS/DFS</span>
+        <span class="algo-tag">Prim MST</span>
+      </div>
+    </div>
+
+    <div class="module-card">
+      <div class="module-num">MODULE 03 // POST /greedy/assign</div>
+      <div class="module-name"><span class="orange">Greedy</span> Engine</div>
+      <div class="module-desc">Assigns deliveries to vehicles using greedy heuristics for maximum value.</div>
+      <div class="module-algos">
+        <span class="algo-tag orange">Fractional Knapsack</span>
+        <span class="algo-tag orange">Job Scheduling</span>
+        <span class="algo-tag orange">Activity Selection</span>
+      </div>
+    </div>
+
+    <div class="module-card">
+      <div class="module-num">MODULE 04 // POST /dp/optimize</div>
+      <div class="module-name"><span class="blue">DP</span> Optimizer</div>
+      <div class="module-desc">Optimal substructure approaches for globally optimal assignment and routing.</div>
+      <div class="module-algos">
+        <span class="algo-tag blue">0/1 Knapsack</span>
+        <span class="algo-tag blue">Floyd-Warshall</span>
+        <span class="algo-tag blue">Multi-Stage DP</span>
+      </div>
+    </div>
+
+    <div class="module-card">
+      <div class="module-num">MODULE 05 // POST /pipeline/run</div>
+      <div class="module-name"><span class="accent">Pipeline</span> Engine</div>
+      <div class="module-desc">End-to-end workflow: generate → sort → assign → route → compute cost.</div>
+      <div class="module-algos">
+        <span class="algo-tag">Full Workflow</span>
+        <span class="algo-tag">Cost Comparison</span>
+        <span class="algo-tag">Timing</span>
+      </div>
+    </div>
+
+    <div class="module-card">
+      <div class="module-num">MODULE 06 // GET /benchmark</div>
+      <div class="module-name"><span class="orange">Performance</span> Analytics</div>
+      <div class="module-desc">Benchmark all algorithms across input sizes. Visualized with Chart.js.</div>
+      <div class="module-algos">
+        <span class="algo-tag orange">100 nodes</span>
+        <span class="algo-tag orange">500 nodes</span>
+        <span class="algo-tag orange">1000 nodes</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  <span>LogiOpt // Logistics Network Optimization System</span>
+  <span>Flask + Chart.js // Academic Project</span>
+</footer>
+
+</body>
+</html>

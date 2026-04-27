@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LogiOpt Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #070b0f;
+    --surface: #0c1118;
+    --surface2: #111820;
+    --border: #1a2535;
+    --accent: #00e5a0;
+    --accent2: #ff6b35;
+    --accent3: #4da6ff;
+    --text: #c8d8e8;
+    --muted: #4a6075;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  html, body { height: 100%; overflow: hidden; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    display: grid;
+    grid-template-rows: 52px 1fr;
+    grid-template-columns: 220px 1fr;
+  }
+
+  /* ── Top Bar ─────────────────────────────────────────────── */
+  .topbar {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    z-index: 50;
+  }
+
+  .logo {
+    font-family: var(--mono);
+    font-size: 0.95rem;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .logo span { color: var(--text); }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--accent);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* ── Sidebar ─────────────────────────────────────────────── */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 1rem 0;
+  }
+
+  .nav-section {
+    padding: 0.75rem 1rem 0.25rem;
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 1.2rem;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+  }
+  .nav-item:hover { color: var(--text); background: var(--surface2); }
+  .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(0,229,160,0.06); }
+
+  .nav-icon { font-size: 0.9rem; }
+
+  /* ── Main ────────────────────────────────────────────────── */
+  .main {
+    overflow-y: auto;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+
+  /* ── Cards ───────────────────────────────────────────────── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1.2rem;
+  }
+
+  .card-title {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .card-title .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .card-title .dot.orange { background: var(--accent2); }
+  .card-title .dot.blue { background: var(--accent3); }
+
+  /* ── Form controls ───────────────────────────────────────── */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 0.8rem;
+  }
+
+  .form-group label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 0.3rem;
+    text-transform: uppercase;
+  }
+
+  input, select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    padding: 0.5rem 0.7rem;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+
+  select option { background: var(--surface); }
+
+  /* ── Toggles ─────────────────────────────────────────────── */
+  .toggle-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .toggle {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    padding: 0.35rem 0.8rem;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .toggle:hover { border-color: var(--accent); color: var(--accent); }
+  .toggle.on { background: rgba(0,229,160,0.12); border-color: var(--accent); color: var(--accent); }
+  .toggle.orange.on { background: rgba(255,107,53,0.12); border-color: var(--accent2); color: var(--accent2); }
+  .toggle.blue.on { background: rgba(77,166,255,0.12); border-color: var(--accent3); color: var(--accent3); }
+
+  /* ── Buttons ─────────────────────────────────────────────── */
+  .btn-row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.8rem; }
+
+  .btn {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 0.6rem 1.4rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-green { background: var(--accent); color: #000; }
+  .btn-green:hover { background: #00ffb3; }
+  .btn-orange { background: var(--accent2); color: #000; }
+  .btn-orange:hover { background: #ff8a5c; }
+  .btn-blue { background: var(--accent3); color: #000; }
+  .btn-blue:hover { background: #73baff; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── Loading ─────────────────────────────────────────────── */
+  .loader {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--accent);
+  }
+  .loader.active { display: flex; }
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid rgba(0,229,160,0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Charts grid ─────────────────────────────────────────── */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.2rem;
+  }
+
+  .chart-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1.2rem;
+    position: relative;
+  }
+
+  .chart-box canvas { max-height: 220px; }
+
+  /* ── Results panel ───────────────────────────────────────── */
+  .results-panel {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--text);
+    max-height: 280px;
+    overflow-y: auto;
+    padding: 0.8rem;
+    white-space: pre-wrap;
+    line-height: 1.6;
+  }
+
+  .results-panel .key { color: var(--accent3); }
+  .results-panel .val { color: var(--accent); }
+  .results-panel .str { color: var(--accent2); }
+  .results-panel .num { color: #c3e88d; }
+
+  /* ── Metrics row ─────────────────────────────────────────── */
+  .metrics-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+  }
+
+  .metric {
+    background: var(--surface);
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .metric-val {
+    font-family: var(--mono);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .metric-val.orange { color: var(--accent2); }
+  .metric-val.blue { color: var(--accent3); }
+
+  .metric-label {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 0.25rem;
+  }
+
+  /* ── Table ───────────────────────────────────────────────── */
+  .result-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+  }
+  .result-table th {
+    text-align: left;
+    padding: 0.5rem 0.7rem;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .result-table td {
+    padding: 0.4rem 0.7rem;
+    border-bottom: 1px solid rgba(26,37,53,0.5);
+    color: var(--text);
+  }
+  .result-table tr:hover td { background: var(--surface2); }
+  .td-accent { color: var(--accent); }
+  .td-orange { color: var(--accent2); }
+  .td-blue { color: var(--accent3); }
+
+  /* ── Pages ───────────────────────────────────────────────── */
+  .page { display: none; }
+  .page.active { display: flex; flex-direction: column; gap: 1.2rem; }
+
+  /* ── Scrollbar ───────────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+  .path-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+  }
+  .path-node {
+    background: rgba(0,229,160,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(0,229,160,0.3);
+    padding: 0.1rem 0.4rem;
+    font-size: 0.65rem;
+  }
+  .path-arrow { color: var(--muted); font-size: 0.6rem; }
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<header class="topbar">
+  <a href="/" class="logo">LOGI<span>OPT</span></a>
+  <div class="topbar-right">
+    <div class="status-dot"></div>
+    <span>BACKEND CONNECTED</span>
+    <span id="clock"></span>
+  </div>
+</header>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="nav-section">Navigation</div>
+  <div class="nav-item active" onclick="showPage('pipeline')" id="nav-pipeline">
+    <span class="nav-icon">⚡</span> Pipeline
+  </div>
+  <div class="nav-item" onclick="showPage('sorting')" id="nav-sorting">
+    <span class="nav-icon">⬍</span> Sorting
+  </div>
+  <div class="nav-item" onclick="showPage('routing')" id="nav-routing">
+    <span class="nav-icon">⬡</span> Routing
+  </div>
+  <div class="nav-item" onclick="showPage('greedy')" id="nav-greedy">
+    <span class="nav-icon">◈</span> Greedy
+  </div>
+  <div class="nav-item" onclick="showPage('dp')" id="nav-dp">
+    <span class="nav-icon">◉</span> DP Optimize
+  </div>
+  <div class="nav-section">Analytics</div>
+  <div class="nav-item" onclick="showPage('benchmark')" id="nav-benchmark">
+    <span class="nav-icon">◫</span> Benchmarks
+  </div>
+</nav>
+
+<!-- Main Content -->
+<main class="main">
+
+  <!-- ── PIPELINE PAGE ─────────────────────────────────────── -->
+  <div class="page active" id="page-pipeline">
+
+    <div class="card">
+      <div class="card-title"><span class="dot"></span> Pipeline Configuration</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Deliveries (n)</label>
+          <input type="number" id="p-count" value="10" min="1" max="100">
+        </div>
+        <div class="form-group">
+          <label>Graph Nodes</label>
+          <input type="number" id="p-nodes" value="10" min="3" max="50">
+        </div>
+        <div class="form-group">
+          <label>Vehicle Count</label>
+          <input type="number" id="p-vehicles" value="3" min="1" max="10">
+        </div>
+        <div class="form-group">
+          <label>Capacity</label>
+          <input type="number" id="p-capacity" value="100" min="10">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="runPipeline()">▶ RUN PIPELINE</button>
+        <div class="loader" id="p-loader"><div class="spinner"></div> Processing...</div>
+      </div>
+    </div>
+
+    <div class="metrics-row" id="pipeline-metrics" style="display:none">
+      <div class="metric">
+        <div class="metric-val" id="m-total-time">—</div>
+        <div class="metric-label">Total Time (ms)</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val orange" id="m-greedy-val">—</div>
+        <div class="metric-label">Greedy Value</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val blue" id="m-dp-val">—</div>
+        <div class="metric-label">DP Value</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val" id="m-route-cost">—</div>
+        <div class="metric-label">Route Cost</div>
+      </div>
+    </div>
+
+    <div class="charts-grid" id="pipeline-charts" style="display:none">
+      <div class="chart-box">
+        <div class="card-title"><span class="dot"></span> Module Timing</div>
+        <canvas id="chart-module-timing"></canvas>
+      </div>
+      <div class="chart-box">
+        <div class="card-title"><span class="dot orange"></span> Greedy vs DP</div>
+        <canvas id="chart-greedy-dp"></canvas>
+      </div>
+    </div>
+
+    <div class="card" id="pipeline-results-card" style="display:none">
+      <div class="card-title"><span class="dot blue"></span> Route Comparison</div>
+      <table class="result-table" id="route-table">
+        <thead><tr><th>Algorithm</th><th>Path</th><th>Cost</th><th>Time (ms)</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- ── SORTING PAGE ──────────────────────────────────────── -->
+  <div class="page" id="page-sorting">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span> Sorting Engine</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Deliveries (n)</label>
+          <input type="number" id="s-count" value="15" min="1" max="200">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="runSorting()">▶ RUN SORT</button>
+        <div class="loader" id="s-loader"><div class="spinner"></div> Sorting...</div>
+      </div>
+    </div>
+
+    <div class="charts-grid" id="sort-charts" style="display:none">
+      <div class="chart-box">
+        <div class="card-title"><span class="dot"></span> Algorithm Time Comparison</div>
+        <canvas id="chart-sort-compare"></canvas>
+      </div>
+      <div class="chart-box">
+        <div class="card-title"><span class="dot blue"></span> Sorted Results — Merge Sort (by deadline)</div>
+        <canvas id="chart-sort-bars"></canvas>
+      </div>
+    </div>
+
+    <div class="card" id="sort-table-card" style="display:none">
+      <div class="card-title"><span class="dot"></span> Merge Sort Result (sorted by deadline)</div>
+      <div style="overflow-x:auto">
+        <table class="result-table" id="sort-result-table">
+          <thead><tr><th>ID</th><th>Weight</th><th>Deadline</th><th>Priority</th><th>Location</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ROUTING PAGE ──────────────────────────────────────── -->
+  <div class="page" id="page-routing">
+    <div class="card">
+      <div class="card-title"><span class="dot blue"></span> Graph Routing Engine</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nodes</label>
+          <input type="number" id="r-nodes" value="10" min="3" max="50">
+        </div>
+        <div class="form-group">
+          <label>Source Node</label>
+          <input type="number" id="r-src" value="0" min="0">
+        </div>
+        <div class="form-group">
+          <label>Dest Node</label>
+          <input type="number" id="r-dst" value="9" min="0">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-blue" onclick="runRouting()">▶ RUN ROUTING</button>
+        <div class="loader" id="r-loader"><div class="spinner"></div> Routing...</div>
+      </div>
+    </div>
+
+    <div class="card" id="routing-results" style="display:none">
+      <div class="card-title"><span class="dot blue"></span> Algorithm Results</div>
+      <table class="result-table" id="routing-table">
+        <thead><tr><th>Algorithm</th><th>Path</th><th>Cost</th><th>Time (ms)</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="charts-grid" id="routing-charts" style="display:none">
+      <div class="chart-box">
+        <div class="card-title"><span class="dot blue"></span> Dijkstra vs Bellman-Ford (time)</div>
+        <canvas id="chart-routing-time"></canvas>
+      </div>
+      <div class="chart-box">
+        <div class="card-title"><span class="dot"></span> MST Edges</div>
+        <canvas id="chart-mst"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── GREEDY PAGE ───────────────────────────────────────── -->
+  <div class="page" id="page-greedy">
+    <div class="card">
+      <div class="card-title"><span class="dot orange"></span> Greedy Assignment Engine</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Deliveries (n)</label>
+          <input type="number" id="g-count" value="12" min="1" max="100">
+        </div>
+        <div class="form-group">
+          <label>Capacity</label>
+          <input type="number" id="g-capacity" value="500" min="10">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-orange" onclick="runGreedy()">▶ RUN GREEDY</button>
+        <div class="loader" id="g-loader"><div class="spinner"></div> Assigning...</div>
+      </div>
+    </div>
+
+    <div class="charts-grid" id="greedy-charts" style="display:none">
+      <div class="chart-box">
+        <div class="card-title"><span class="dot orange"></span> Methods Comparison</div>
+        <canvas id="chart-greedy-methods"></canvas>
+      </div>
+      <div class="chart-box">
+        <div class="card-title"><span class="dot orange"></span> Items Scheduled</div>
+        <canvas id="chart-greedy-items"></canvas>
+      </div>
+    </div>
+
+    <div class="card" id="greedy-table-card" style="display:none">
+      <div class="card-title"><span class="dot orange"></span> Fractional Knapsack Assignments</div>
+      <table class="result-table" id="greedy-fk-table">
+        <thead><tr><th>ID</th><th>Weight Taken</th><th>Fraction</th><th>Value</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── DP PAGE ───────────────────────────────────────────── -->
+  <div class="page" id="page-dp">
+    <div class="card">
+      <div class="card-title"><span class="dot blue"></span> Dynamic Programming Optimizer</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Deliveries (n)</label>
+          <input type="number" id="dp-count" value="10" min="1" max="50">
+        </div>
+        <div class="form-group">
+          <label>Capacity (int)</label>
+          <input type="number" id="dp-capacity" value="80" min="1">
+        </div>
+        <div class="form-group">
+          <label>Graph Nodes</label>
+          <input type="number" id="dp-nodes" value="8" min="3" max="30">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-blue" onclick="runDP()">▶ RUN DP</button>
+        <div class="loader" id="dp-loader"><div class="spinner"></div> Optimizing...</div>
+      </div>
+    </div>
+
+    <div class="card" id="dp-results" style="display:none">
+      <div class="card-title"><span class="dot blue"></span> DP Results</div>
+      <div id="dp-summary" style="font-family:var(--mono);font-size:0.8rem;line-height:1.8;color:var(--text);"></div>
+    </div>
+
+    <div class="charts-grid" id="dp-charts" style="display:none">
+      <div class="chart-box">
+        <div class="card-title"><span class="dot blue"></span> Module Timing</div>
+        <canvas id="chart-dp-timing"></canvas>
+      </div>
+      <div class="chart-box">
+        <div class="card-title"><span class="dot blue"></span> Knapsack DP Row Preview</div>
+        <canvas id="chart-dp-table"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── BENCHMARK PAGE ────────────────────────────────────── -->
+  <div class="page" id="page-benchmark">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span> Performance Benchmarks</div>
+      <p style="font-family:var(--mono);font-size:0.8rem;color:var(--muted);margin-bottom:1rem;">
+        Runs all algorithms across multiple input sizes and measures execution time.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="runBenchmark()">▶ RUN ALL BENCHMARKS</button>
+        <div class="loader" id="b-loader"><div class="spinner"></div> Benchmarking...</div>
+      </div>
+    </div>
+
+    <div class="charts-grid" id="bench-charts" style="display:none">
+      <div class="chart-box">
+        <div class="card-title"><span class="dot"></span> Sorting — Time vs Input Size</div>
+        <canvas id="chart-bench-sort"></canvas>
+      </div>
+      <div class="chart-box">
+        <div class="card-title"><span class="dot blue"></span> Graph Routing — Time vs Nodes</div>
+        <canvas id="chart-bench-graph"></canvas>
+      </div>
+      <div class="chart-box">
+        <div class="card-title"><span class="dot orange"></span> Greedy vs DP — Time vs Input Size</div>
+        <canvas id="chart-bench-greedy-dp"></canvas>
+      </div>
+      <div class="chart-box">
+        <div class="card-title"><span class="dot"></span> Benchmark Data</div>
+        <div class="results-panel" id="bench-raw" style="max-height:200px"></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ── Utility ────────────────────────────────────────────────────────────────
+
+const BASE = '';  // same origin
+
+const chartDefaults = {
+  responsive: true,
+  plugins: { legend: { labels: { color: '#c8d8e8', font: { family: "'Space Mono'" , size: 10 } } } },
+  scales: {
+    x: { ticks: { color: '#4a6075', font: { family: "'Space Mono'", size: 9 } }, grid: { color: 'rgba(26,37,53,0.8)' } },
+    y: { ticks: { color: '#4a6075', font: { family: "'Space Mono'", size: 9 } }, grid: { color: 'rgba(26,37,53,0.8)' } },
+  }
+};
+
+let charts = {};
+
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+function makeChart(id, config) {
+  destroyChart(id);
+  const ctx = document.getElementById(id).getContext('2d');
+  charts[id] = new Chart(ctx, config);
+}
+
+function show(id) { document.getElementById(id).style.display = ''; }
+function hide(id) { document.getElementById(id).style.display = 'none'; }
+function setText(id, v) { document.getElementById(id).textContent = v; }
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+}
+
+function setLoader(id, on) {
+  const el = document.getElementById(id);
+  el.classList.toggle('active', on);
+}
+
+async function apiPost(url, body) {
+  const res = await fetch(BASE + url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+async function apiGet(url) {
+  const res = await fetch(BASE + url);
+  return res.json();
+}
+
+function pathBadge(path) {
+  if (!path || path.length === 0) return '<span style="color:var(--muted)">—</span>';
+  return '<span class="path-badge">' +
+    path.map((n, i) =>
+      `<span class="path-node">${n}</span>` +
+      (i < path.length - 1 ? '<span class="path-arrow">›</span>' : '')
+    ).join('') + '</span>';
+}
+
+// ── Clock ──────────────────────────────────────────────────────────────────
+function updateClock() {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-IN', { hour12: false });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── PIPELINE ───────────────────────────────────────────────────────────────
+async function runPipeline() {
+  setLoader('p-loader', true);
+  const body = {
+    count: +document.getElementById('p-count').value,
+    num_nodes: +document.getElementById('p-nodes').value,
+    vehicle_count: +document.getElementById('p-vehicles').value,
+    capacity: +document.getElementById('p-capacity').value,
+  };
+  try {
+    const data = await apiPost('/pipeline/run', body);
+    const r = data.result;
+
+    // Metrics
+    setText('m-total-time', r.total_pipeline_time_ms);
+    setText('m-greedy-val', r.cost_summary?.greedy_value ?? '—');
+    setText('m-dp-val', r.cost_summary?.dp_value ?? '—');
+    setText('m-route-cost', r.cost_summary?.dijkstra_cost ?? '—');
+    document.getElementById('pipeline-metrics').style.display = '';
+
+    // Module timing chart
+    const sort_t = r.sorting?.time_ms ?? 0;
+    const greedy_t = r.greedy?.time_ms ?? 0;
+    const dp_t = r.dp?.time_ms ?? 0;
+    const route_t = r.routing?.time_ms ?? 0;
+
+    makeChart('chart-module-timing', {
+      type: 'bar',
+      data: {
+        labels: ['Sorting', 'Greedy', 'DP', 'Routing'],
+        datasets: [{
+          label: 'Time (ms)',
+          data: [sort_t, greedy_t, dp_t, route_t],
+          backgroundColor: ['rgba(0,229,160,0.7)', 'rgba(255,107,53,0.7)', 'rgba(77,166,255,0.7)', 'rgba(0,229,160,0.4)'],
+          borderColor: ['#00e5a0', '#ff6b35', '#4da6ff', '#00e5a0'],
+          borderWidth: 1,
+        }]
+      },
+      options: { ...chartDefaults }
+    });
+
+    // Greedy vs DP
+    const gv = r.cost_summary?.greedy_value ?? 0;
+    const dv = r.cost_summary?.dp_value ?? 0;
+    makeChart('chart-greedy-dp', {
+      type: 'bar',
+      data: {
+        labels: ['Greedy (Frac. Knapsack)', 'DP (0/1 Knapsack)'],
+        datasets: [{
+          label: 'Total Value',
+          data: [gv, dv],
+          backgroundColor: ['rgba(255,107,53,0.7)', 'rgba(77,166,255,0.7)'],
+          borderColor: ['#ff6b35', '#4da6ff'],
+          borderWidth: 1,
+        }]
+      },
+      options: { ...chartDefaults }
+    });
+
+    document.getElementById('pipeline-charts').style.display = '';
+
+    // Route table
+    const rr = r.routing?.data;
+    if (rr) {
+      const tbody = document.querySelector('#route-table tbody');
+      tbody.innerHTML = `
+        <tr><td>Dijkstra</td><td>${pathBadge(rr.dijkstra?.path)}</td><td class="td-accent">${rr.dijkstra?.cost}</td><td>${rr.dijkstra?.time_ms} ms</td></tr>
+        <tr><td>Bellman-Ford</td><td>${pathBadge(rr.bellman_ford?.path)}</td><td class="td-blue">${rr.bellman_ford?.cost}</td><td>${rr.bellman_ford?.time_ms} ms</td></tr>
+        <tr><td>BFS</td><td>${pathBadge(rr.bfs?.path)}</td><td>—</td><td>${rr.bfs?.time_ms} ms</td></tr>
+        <tr><td>DFS</td><td>${pathBadge(rr.dfs?.path)}</td><td>—</td><td>${rr.dfs?.time_ms} ms</td></tr>
+      `;
+      document.getElementById('pipeline-results-card').style.display = '';
+    }
+
+  } catch(e) { alert('Error: ' + e.message); }
+  setLoader('p-loader', false);
+}
+
+// ── SORTING ────────────────────────────────────────────────────────────────
+async function runSorting() {
+  setLoader('s-loader', true);
+  try {
+    const data = await apiPost('/sorting/prioritize', { count: +document.getElementById('s-count').value });
+    const r = data.result;
+    const cmp = r.comparison;
+
+    makeChart('chart-sort-compare', {
+      type: 'bar',
+      data: {
+        labels: ['Merge Sort', 'Quick Sort', 'Heap Sort'],
+        datasets: [{
+          label: 'Time (ms)',
+          data: [cmp.merge_sort_ms, cmp.quick_sort_ms, cmp.heap_sort_ms],
+          backgroundColor: ['rgba(0,229,160,0.7)', 'rgba(255,107,53,0.7)', 'rgba(77,166,255,0.7)'],
+          borderWidth: 1,
+        }]
+      },
+      options: { ...chartDefaults }
+    });
+
+    // Bar chart of deadlines
+    const merged = r.merge_sort.result;
+    makeChart('chart-sort-bars', {
+      type: 'bar',
+      data: {
+        labels: merged.slice(0, 20).map(d => d.id),
+        datasets: [{
+          label: 'Deadline',
+          data: merged.slice(0, 20).map(d => d.deadline),
+          backgroundColor: 'rgba(0,229,160,0.5)',
+          borderColor: '#00e5a0',
+          borderWidth: 1,
+        }, {
+          label: 'Priority',
+          data: merged.slice(0, 20).map(d => d.priority),
+          backgroundColor: 'rgba(77,166,255,0.4)',
+          borderColor: '#4da6ff',
+          borderWidth: 1,
+        }]
+      },
+      options: { ...chartDefaults }
+    });
+
+    document.getElementById('sort-charts').style.display = '';
+
+    // Table
+    const tbody = document.querySelector('#sort-result-table tbody');
+    tbody.innerHTML = merged.map(d =>
+      `<tr><td class="td-accent">${d.id}</td><td>${d.weight}</td><td>${d.deadline}</td><td>${d.priority}</td><td>${d.location}</td></tr>`
+    ).join('');
+    document.getElementById('sort-table-card').style.display = '';
+
+  } catch(e) { alert('Error: ' + e.message); }
+  setLoader('s-loader', false);
+}
+
+// ── ROUTING ────────────────────────────────────────────────────────────────
+async function runRouting() {
+  setLoader('r-loader', true);
+  const nodes = +document.getElementById('r-nodes').value;
+  const src = +document.getElementById('r-src').value;
+  const dst = +document.getElementById('r-dst').value;
+  try {
+    const data = await apiPost('/graph/route', { num_nodes: nodes, src, dst });
+    const r = data.result;
+
+    // Table
+    const tbody = document.querySelector('#routing-table tbody');
+    tbody.innerHTML = `
+      <tr><td>Dijkstra</td><td>${pathBadge(r.dijkstra?.path)}</td><td class="td-accent">${r.dijkstra?.cost}</td><td>${r.dijkstra?.time_ms}</td></tr>
+      <tr><td>Bellman-Ford</td><td>${pathBadge(r.bellman_ford?.path)}</td><td class="td-blue">${r.bellman_ford?.cost}</td><td>${r.bellman_ford?.time_ms}</td></tr>
+      <tr><td>BFS</td><td>${pathBadge(r.bfs?.path)}</td><td>—</td><td>${r.bfs?.time_ms}</td></tr>
+      <tr><td>DFS</td><td>${pathBadge(r.dfs?.path)}</td><td>—</td><td>${r.dfs?.time_ms}</td></tr>
+    `;
+    document.getElementById('routing-results').style.display = '';
+
+    // Time comparison
+    makeChart('chart-routing-time', {
+      type: 'bar',
+      data: {
+        labels: ['Dijkstra', 'Bellman-Ford', 'BFS', 'DFS'],
+        datasets: [{
+          label: 'Time (ms)',
+          data: [r.comparison.dijkstra_ms, r.comparison.bellman_ford_ms, r.comparison.bfs_ms, r.comparison.dfs_ms],
+          backgroundColor: ['rgba(0,229,160,0.7)', 'rgba(77,166,255,0.7)', 'rgba(255,107,53,0.6)', 'rgba(255,107,53,0.3)'],
+          borderWidth: 1,
+        }]
+      },
+      options: { ...chartDefaults }
+    });
+
+    // MST
+    const mst = r.mst?.edges || [];
+    makeChart('chart-mst', {
+      type: 'bar',
+      data: {
+        labels: mst.slice(0, 12).map(e => `${e.from}→${e.to}`),
+        datasets: [{
+          label: 'Edge Weight',
+          data: mst.slice(0, 12).map(e => e.weight),
+          backgroundColor: 'rgba(0,229,160,0.5)',
+          borderColor: '#00e5a0',
+          borderWidth: 1,
+        }]
+      },
+      options: { ...chartDefaults }
+    });
+
+    document.getElementById('routing-charts').style.display = '';
+
+  } catch(e) { alert('Error: ' + e.message); }
+  setLoader('r-loader', false);
+}
+
+// ── GREEDY ─────────────────────────────────────────────────────────────────
+async function runGreedy() {
+  setLoader('g-loader', true);
+  try {
+    const data = await apiPost('/greedy/assign', {
+      count: +document.getElementById('g-count').value,
+      capacity: +document.getElementById('g-capacity').value,
+    });
+    const r = data.result;
+
+    makeChart('chart-greedy-methods', {
+      type: 'radar',
+      data: {
+        labels: ['Value', 'Count', 'Speed'],
+        datasets: [{
+          label: 'Frac. Knapsack',
+          data: [
+            Math.min(r.fractional_knapsack.total_value / 10, 100),
+            r.fractional_knapsack.count,
+            100 - r.fractional_knapsack.time_ms * 10
+          ],
+          backgroundColor: 'rgba(255,107,53,0.2)',
+          borderColor: '#ff6b35',
+          pointBackgroundColor: '#ff6b35',
+        }, {
+          label: 'Job Scheduling',
+          data: [
+            r.job_scheduling.total_profit,
+            r.job_scheduling.count,
+            100 - r.job_scheduling.time_ms * 10
+          ],
+          backgroundColor: 'rgba(0,229,160,0.2)',
+          borderColor: '#00e5a0',
+          pointBackgroundColor: '#00e5a0',
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { labels: { color: '#c8d8e8', font: { family: "'Space Mono'", size: 10 } } } },
+        scales: { r: { ticks: { color: '#4a6075' }, grid: { color: 'rgba(26,37,53,0.8)' }, pointLabels: { color: '#c8d8e8' } } }
+      }
+    });
+
+    makeChart('chart-greedy-items', {
+      type: 'bar',
+      data: {
+        labels: ['Frac. Knapsack', 'Job Scheduling', 'Activity Selection'],
+        datasets: [{
+          label: 'Items Selected',
+          data: [r.fractional_knapsack.count, r.job_scheduling.count, r.activity_selection.count],
+          backgroundColor: ['rgba(255,107,53,0.7)', 'rgba(0,229,160,0.7)', 'rgba(77,166,255,0.7)'],
+          borderWidth: 1,
+        }]
+      },
+      options: { ...chartDefaults }
+    });
+
+    document.getElementById('greedy-charts').style.display = '';
+
+    // FK table
+    const tbody = document.querySelector('#greedy-fk-table tbody');
+    tbody.innerHTML = r.fractional_knapsack.assigned.map(a =>
+      `<tr><td class="td-orange">${a.delivery.id}</td><td>${a.weight_taken}</td><td>${(a.fraction * 100).toFixed(1)}%</td><td>${a.value_taken}</td></tr>`
+    ).join('');
+    document.getElementById('greedy-table-card').style.display = '';
+
+  } catch(e) { alert('Error: ' + e.message); }
+  setLoader('g-loader', false);
+}
+
+// ── DP ─────────────────────────────────────────────────────────────────────
+async function runDP() {
+  setLoader('dp-loader', true);
+  try {
+    const data = await apiPost('/dp/optimize', {
+      count: +document.getElementById('dp-count').value,
+      capacity: +document.getElementById('dp-capacity').value,
+      num_nodes: +document.getElementById('dp-nodes').value,
+    });
+    const r = data.result;
+
+    document.getElementById('dp-summary').innerHTML = `
+      <span style="color:var(--accent)">0/1 Knapsack</span><br>
+      &nbsp;&nbsp;Optimal Value: <span style="color:#c3e88d">${r.knapsack_01.optimal_value}</span><br>
+      &nbsp;&nbsp;Items Selected: <span style="color:#c3e88d">${r.knapsack_01.item_count}</span><br>
+      &nbsp;&nbsp;Time: <span style="color:var(--accent2)">${r.knapsack_01.time_ms} ms</span><br><br>
+      <span style="color:var(--accent3)">Floyd-Warshall</span><br>
+      &nbsp;&nbsp;Source Row (first 10): <span style="color:#c3e88d">${JSON.stringify(r.floyd_warshall.matrix_src_row?.slice(0,10))}</span><br>
+      &nbsp;&nbsp;Time: <span style="color:var(--accent2)">${r.floyd_warshall.time_ms} ms</span><br><br>
+      <span style="color:var(--accent)">Multi-Stage DP</span><br>
+      &nbsp;&nbsp;Path: ${r.multi_stage.path.join(' → ') || '—'}<br>
+      &nbsp;&nbsp;Cost: <span style="color:#c3e88d">${r.multi_stage.cost}</span><br>
+      &nbsp;&nbsp;Time: <span style="color:var(--accent2)">${r.multi_stage.time_ms} ms</span>
+    `;
+    document.getElementById('dp-results').style.display = '';
+
+    makeChart('chart-dp-timing', {
+      type: 'bar',
+      data: {
+        labels: ['0/1 Knapsack', 'Floyd-Warshall', 'Multi-Stage DP'],
+        datasets: [{
+          label: 'Time (ms)',
+          data: [r.comparison.knapsack_ms, r.comparison.floyd_warshall_ms, r.comparison.multi_stage_ms],
+          backgroundColor: ['rgba(77,166,255,0.7)', 'rgba(0,229,160,0.7)', 'rgba(255,107,53,0.7)'],
+          borderWidth: 1,
+        }]
+      },
+      options: { ...chartDefaults }
+    });
+
+    const preview = r.knapsack_01.dp_table_last_row_preview || [];
+    makeChart('chart-dp-table', {
+      type: 'line',
+      data: {
+        labels: preview.map((_, i) => i),
+        datasets: [{
+          label: 'DP[n][w] (last row)',
+          data: preview,
+          borderColor: '#4da6ff',
+          backgroundColor: 'rgba(77,166,255,0.1)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 3,
+        }]
+      },
+      options: { ...chartDefaults }
+    });
+
+    document.getElementById('dp-charts').style.display = '';
+
+  } catch(e) { alert('Error: ' + e.message); }
+  setLoader('dp-loader', false);
+}
+
+// ── BENCHMARK ──────────────────────────────────────────────────────────────
+async function runBenchmark() {
+  setLoader('b-loader', true);
+  try {
+    const data = await apiGet('/benchmark');
+    const r = data.result;
+
+    // Sorting benchmark
+    const sortData = r.sorting;
+    makeChart('chart-bench-sort', {
+      type: 'line',
+      data: {
+        labels: sortData.map(d => d.n),
+        datasets: [
+          { label: 'Merge Sort', data: sortData.map(d => d.merge_sort_ms), borderColor: '#00e5a0', backgroundColor: 'rgba(0,229,160,0.1)', fill: true, tension: 0.3 },
+          { label: 'Quick Sort', data: sortData.map(d => d.quick_sort_ms), borderColor: '#ff6b35', backgroundColor: 'rgba(255,107,53,0.1)', fill: true, tension: 0.3 },
+          { label: 'Heap Sort', data: sortData.map(d => d.heap_sort_ms), borderColor: '#4da6ff', backgroundColor: 'rgba(77,166,255,0.1)', fill: true, tension: 0.3 },
+        ]
+      },
+      options: { ...chartDefaults }
+    });
+
+    // Graph benchmark
+    const graphData = r.graph;
+    makeChart('chart-bench-graph', {
+      type: 'line',
+      data: {
+        labels: graphData.map(d => d.n),
+        datasets: [
+          { label: 'Dijkstra', data: graphData.map(d => d.dijkstra_ms), borderColor: '#00e5a0', tension: 0.3 },
+          { label: 'Bellman-Ford', data: graphData.map(d => d.bellman_ford_ms), borderColor: '#4da6ff', tension: 0.3 },
+          { label: 'Prim MST', data: graphData.map(d => d.mst_ms), borderColor: '#ff6b35', tension: 0.3 },
+        ]
+      },
+      options: { ...chartDefaults }
+    });
+
+    // Greedy vs DP
+    const gdData = r.greedy_vs_dp;
+    makeChart('chart-bench-greedy-dp', {
+      type: 'line',
+      data: {
+        labels: gdData.map(d => d.n),
+        datasets: [
+          { label: 'Greedy', data: gdData.map(d => d.greedy_ms), borderColor: '#ff6b35', backgroundColor: 'rgba(255,107,53,0.1)', fill: true, tension: 0.3 },
+          { label: 'DP', data: gdData.map(d => d.dp_ms), borderColor: '#4da6ff', backgroundColor: 'rgba(77,166,255,0.1)', fill: true, tension: 0.3 },
+        ]
+      },
+      options: { ...chartDefaults }
+    });
+
+    document.getElementById('bench-charts').style.display = '';
+    document.getElementById('bench-raw').textContent = JSON.stringify(r, null, 2);
+
+  } catch(e) { alert('Error: ' + e.message); }
+  setLoader('b-loader', false);
+}
+</script>
+
+</body>
+</html>
